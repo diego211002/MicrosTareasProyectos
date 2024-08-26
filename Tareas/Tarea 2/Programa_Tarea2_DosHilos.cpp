@@ -5,10 +5,11 @@
 #include <mutex>
 #include <condition_variable>
 
-std::mutex mtx;
-std::condition_variable cv;
-bool escrituraCompleta = false;
+std::mutex mtx; // Se utiliza para controlar el acceso al archivo y notifica al hilo de lectura cuando la escritura ha terminado.
+std::condition_variable cv; // Sincronizar hilos permitiendo que uno espere hasta que una condición específica se cumpla y el otro lo notifique de que se puede continuar.
+bool escrituraCompleta = false; // Inicia en "false" para que cuando un hilo finalice el trabajo se pase a un "true" 
 
+// Funcion para la escritura de numeros en consola 
 void escribirNumeros(const std::string& filename) {
     std::ofstream outfile(filename);
 
@@ -25,12 +26,13 @@ void escribirNumeros(const std::string& filename) {
 
     outfile.close();
 
-    // Notificar que la escritura ha terminado
+    // Notifica que la escritura ha terminado
     std::lock_guard<std::mutex> lock(mtx);
     escrituraCompleta = true;
     cv.notify_one();
 }
 
+// Funcion de lectura de numeros al finalizar la escritura y que esta este completa
 void leerNumeros(const std::string& filename) {
     std::unique_lock<std::mutex> lock(mtx);
     cv.wait(lock, [] { return escrituraCompleta; });
@@ -52,6 +54,7 @@ void leerNumeros(const std::string& filename) {
     infile.close();
 }
 
+// Funcion de main que llama las funciones anteriores iniciando su contador y contando el tiempo de duracion de programa
 int main() {
     const std::string filename = "numeros.txt";
 
